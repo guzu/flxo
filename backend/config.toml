@@ -1,0 +1,14 @@
+[app]
+secret_key = "change-this-to-a-secure-random-key"
+bind = "127.0.0.1"
+port = 8080
+access_url = "http://localhost:8080"
+allowed_origins = "http://localhost:5173"
+
+[db]
+driver = "sqlite"
+host = "flxo.db"
+
+[oauth]
+client_id = ""
+client_secret = ""

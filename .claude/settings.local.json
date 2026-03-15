@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(cat:*)",
+      "Bash(uv run python:*)",
+      "Bash(uv run ruff format:*)",
+      "Bash(uv run ruff check:*)",
+      "Bash(bash lint.sh)",
+      "Bash(rtk git *)"
+    ]
+  }
+}
