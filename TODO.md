@@ -32,11 +32,11 @@
 
 ## Performance (scalabilité à ~100 places)
 
-- [ ] **`limit=500` sur les présences** (bug) — `apiListPresences` utilise `limit=500` en dur ; avec 100 personnes sur 14 semaines (~14 000 présences), les données sont **tronquées silencieusement**. Augmenter la limite, paginer, ou filtrer par office
+- [x] **`limit=500` sur les présences** (bug) — `apiListPresences` pagine automatiquement par pages de 500 jusqu'à épuisement
 - [ ] **Création des sièges 1 par 1** — `initApp()` fait un `POST /seat/` séquentiel par bureau manquant ; avec 100 places × N offices = centaines d'appels au premier lancement. Solution : endpoint bulk `POST /seat/bulk` ou seed côté backend
 - [ ] **"Appliquer à tous" séquentiel** — `setSlotDesk` avec l'option "appliquer à tous" fait un `PUT /presence/{id}` par créneau futur, séquentiellement (contrainte SQLite). Avec 100 créneaux = 100 PUT séquentiels. Solution : endpoint bulk `PUT /presence/bulk-seat`
-- [ ] **Recherches linéaires dans `bookings[]`** — chaque cellule fait 2-3 `.find()` sur le tableau `bookings` (O(n)). Avec 100 personnes × 14 000 bookings × 2 000 cellules visibles = millions d'itérations par rendu. Solution : indexer par `Map<"personId-weekKey-day-slot", booking>`
-- [ ] **`GET /seat/` sans filtre office** — ramène tous les sièges de tous les offices ; `GET /office/{id}/seats` existe déjà mais n'est pas utilisé par `initApp()`
+- [x] **Recherches linéaires dans `bookings[]`** — `_bookingMap` (Map) indexée par `"personId|weekKey|day|slot"` ; lookups en O(1) au lieu de `.find()` linéaires ; batch loading avec notification réactive unique
+- [x] **`GET /seat/` sans filtre office** — `initApp()` utilise `apiListOfficeSeatsPaginated(officeId)` via `GET /office/{id}/seats` (paginé, par office) ; limite backend augmentée à 500
 - [ ] **`overbookedSlots` computed** — itère sur tous les bookings à chaque changement ; mineur seul mais déclenché fréquemment
 
 ## Qualité technique

@@ -146,20 +146,20 @@ uv run alembic revision --autogenerate -m "description"
 | `ssoEnabled` | `ref` | `true` si SSO actif (lu depuis `GET /auth/config`) |
 | `isLoading` | `ref` | Chargement initial |
 | `persons` | `reactive[]` | Liste locale des utilisateurs |
-| `bookings` | `reactive[]` | `{ personId, weekKey, day, slot, state, backendId, seatId, officeId }` |
+| `bookings` | `computed[]` | Dérivé de `_bookingMap` (Map interne) ; `{ personId, weekKey, day, slot, state, backendId, seatId, officeId }` |
 
 ### Initialisation (`initApp`)
 
 1. `GET /auth/config` → `ssoEnabled`, `offices[]` → liste des offices avec `desk_count` (agrégation SQL)
 2. `GET /user/me` → `loggedUser`
 3. `activeOfficeId` ← restauré depuis `localStorage` ou `offices[0].id`
-4. `GET /seat/` → charge/crée les sièges pour **chaque office**, construit les maps `deskToSeatIdByOffice` / `seatToDeskIdByOffice`
+4. `GET /office/{id}/seats` (paginé, par office) → charge/crée les sièges, construit les maps `deskToSeatIdByOffice` / `seatToDeskIdByOffice`
 5. `GET /user/` → peuple `persons[]`, marque `isLoggedUser`
-6. `loadPresenceRange(-4, 9)` → charge les présences DB dans `bookings[]`
+6. `loadPresenceRange(-4, 9)` → charge les présences DB dans `_bookingMap` (batch, notification unique)
 
 ### Comportements clés
 
-- **Bookings** : optimistic updates + rollback sur erreur API (erreurs loggées en `console.error`)
+- **Bookings** : `_bookingMap` (Map non-réactif) indexée par `"personId|weekKey|day|slot"` pour des lookups O(1) ; `_bookingVersion` (ref compteur) pour la réactivité manuelle ; optimistic updates + rollback sur erreur API
 - **Chargement lazy** : `navigateWeek(delta)` ne fetche que les semaines non encore chargées
 - **Présences chargées** : `p.user.id` (pas `p.user_id` — `PresenceWithUser` ne contient pas ce champ)
 - **Drag-select** : uniquement sur la ligne de l'utilisateur connecté (`isLoggedUser` guard)
