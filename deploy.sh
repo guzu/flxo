@@ -26,7 +26,7 @@ docker run --rm \
   -v "$SCRIPT_DIR/backend:/root/flxo/backend" \
   -v "$UV_PYTHON_DIR:/root/.local/share/uv/python" \
   -w /root/flxo/backend \
-  alpine:latest \
+  alpine:3.12 \
   sh -c "
     set -e
     apk add --no-cache gcc g++ musl-dev make file curl libffi-dev openssl-dev
@@ -46,8 +46,6 @@ echo "==> Sync du backend et du venv..."
 rsync -az --delete \
   --exclude='__pycache__' \
   --exclude='*.pyc' \
-  --exclude='flxo.db' \
-  --exclude='config.toml' \
   -e sshvm \
   "$SCRIPT_DIR/backend/" "$REMOTE:$REMOTE_DIR/backend/"
 
@@ -56,28 +54,24 @@ rsync -az \
   -e sshvm \
   "$UV_PYTHON_DIR/" "$REMOTE:/root/.local/share/uv/python/"
 
-# ─── 5. Copie de la base de données ─────────────────────────────────────────
-echo "==> Copie de la base de données..."
-rsync -az \
-  -e sshvm \
-  "$SCRIPT_DIR/backend/flxo.db" "$REMOTE:$REMOTE_DIR/backend/flxo.db"
-
-# ─── 6. Déploiement du frontend → /var/www/http/ ───────────────────────────
+# ─── 5. Déploiement du frontend → /var/www/http/ ───────────────────────────
 echo "==> Déploiement du frontend..."
 rsync -az --delete \
   -e sshvm \
   "$SCRIPT_DIR/frontend/dist/" "$REMOTE:/var/www/http/"
 
-# ─── 6b. Copie des assets offices (logo, floor plan) ─────────────────────
+# ─── 5b. Copie des assets offices (logo, floor plan) ─────────────────────
 echo "==> Copie des assets offices..."
 STATIC_FILES=$(python3 -c "
-import tomllib, pathlib
-cfg = tomllib.loads(pathlib.Path('$SCRIPT_DIR/backend/config.toml').read_text())
-for o in cfg.get('offices', []):
+import sqlite3, json
+conn = sqlite3.connect('$SCRIPT_DIR/backend/flxo.db')
+for row in conn.execute('SELECT properties FROM office'):
+    props = json.loads(row[0]) if row[0] else {}
     for k in ('logo_url', 'floor_plan_url'):
-        v = o.get(k, '')
+        v = props.get(k, '')
         if v:
             print(v.lstrip('/'))
+conn.close()
 ")
 for f in $STATIC_FILES; do
   src="$SCRIPT_DIR/frontend/public/$f"
@@ -89,17 +83,16 @@ for f in $STATIC_FILES; do
   fi
 done
 
-# ─── 7. Setup distant ──────────────────────────────────────────────────────
+# ─── 6. Configuration distante ────────────────────────────────────────────
 echo "==> Configuration distante..."
 sshvm "$REMOTE" bash << ENDSSH
 set -euo pipefail
 source /root/.profile
 
-# Config (création initiale uniquement)
-if [ ! -f "$REMOTE_DIR/backend/config.toml" ]; then
-  echo "  -> Création de config.toml (nouvelle installation)"
-  SECRET_KEY=\$(python3 -c "import secrets; print(secrets.token_hex(32))")
-  cat > "$REMOTE_DIR/backend/config.toml" << EOF
+# Config — écrasé à chaque deploy
+echo "  -> Écriture de config.toml..."
+SECRET_KEY=\$(python3 -c "import secrets; print(secrets.token_hex(32))")
+cat > "$REMOTE_DIR/backend/config.toml" << EOF
 [app]
 secret_key = "\$SECRET_KEY"
 bind = "0.0.0.0"
@@ -114,22 +107,7 @@ host = "$REMOTE_DIR/backend/flxo.db"
 [oauth]
 client_id = ""
 client_secret = ""
-
-[[offices]]
-name = "Wojo Paris"
-address = "Paris"
-logo_url = "/wojo-logo.png"
-floor_plan_url = "/wojo-paris.svg"
-desk_count = 6
 EOF
-else
-  echo "  -> config.toml existant conservé"
-fi
-
-# Migrations
-echo "  -> Migrations Alembic..."
-cd "$REMOTE_DIR/backend"
-.venv/bin/alembic upgrade head
 
 # Service OpenRC
 if [ ! -f /etc/init.d/flxo ]; then
