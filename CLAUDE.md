@@ -127,7 +127,7 @@ uv run alembic revision --autogenerate -m "description"
 | `src/colors.js` | Palette de couleurs ; `colorForUser(backendId)` persiste la couleur dans `localStorage` |
 | `src/App.vue` | Topbar logout + gate login + layout ; modale de confirmation suppression |
 | `src/components/LoginView.vue` | Formulaire de connexion |
-| `src/components/WeekGrid.vue` | Grille 2 semaines ; ligne "Mon poste" par créneau ; modale de sélection de bureau |
+| `src/components/WeekGrid.vue` | Grille 2 semaines ; ligne "Présents" (compteur par slot, toggle 123) ; ligne "Mon poste" par créneau ; modale de sélection de bureau |
 | `src/components/PersonRow.vue` | Ligne par utilisateur (click/drag → booking) ; guard `isLoggedUser` |
 | `src/components/SlotCell.vue` | Cellule AM/PM ; triangle indicateur bureau collègue ; point coloré si conflit cross-office |
 | `src/components/OfficePicker.vue` | Sélecteur d'office dans la sidebar (masqué si un seul office) |

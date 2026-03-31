@@ -9,7 +9,7 @@
 
 ## UX à fort impact
 
-- [ ] **Résumé par jour** — badge "4 personnes" au-dessus de chaque colonne (comptage créneaux confirmés)
+- [x] **Résumé par créneau** — ligne "Présents" au-dessus de "Mon poste", comptage des confirmés par slot ; toggle via bouton 123 dans la ligne semaine, état persisté dans `localStorage`
 - [ ] **Toasts d'erreur** — les erreurs API font un rollback silencieux ; afficher un message discret en bas de page
 - [x] **Réservation de bureau par créneau** — ligne "Mon poste" dans la grille, popup `DeskPickerModal` sur plan SVG, `seat_id` sauvegardé par présence, postes pris visibles dans la popup, triangle indicateur sur les cellules des collègues, option "appliquer à toutes mes réservations futures"
 - [x] **Conflits de bureau sur le plan principal** — `FloorPlan.vue` reflète les réservations par créneau au survol d'une cellule de la grille (desk-slot ou SlotCell) ; les bureaux occupés sont colorés avec le nom de l'occupant en tooltip
